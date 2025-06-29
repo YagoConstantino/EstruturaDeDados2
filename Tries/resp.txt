@@ -1,0 +1,142 @@
+#include "trie.h"
+#include <string.h>
+/* */
+Trie *create_node (char data) {
+  Trie *node = (Trie *)malloc(sizeof(Trie));
+  node->data = data;
+  node->end = FALSE;
+  node->nchild = 0;
+  int i;
+  //size is the alphabet size 
+  for (i = 0; i < size; i++) {
+    node->keys[i] = NULL;	   
+  }
+  return node;   
+}
+
+/* */
+void free_node (Trie *node) {
+  int i;
+  for (i = 0; i < size; i++) {
+    if (node->keys[i] != NULL) {
+      free_node (node->keys[i]);	    
+    }
+  }	  
+  free (node);
+}
+
+/* */
+Trie *insert (Trie *root, char *word) {
+ if(search_auxiliary(root,word))
+  return root;
+ else
+ {
+  Trie *t = root;
+  int i;
+  for(i=0;word[i]!= '\0';i++)
+  {
+    int index = word[i] -'a';
+
+    if(t->keys[index]==NULL) t->keys[index] = create_node(word[i]);
+    t->nchild += 1;
+    t = t->keys[index];
+  }
+  t->end = TRUE;
+  return root;
+ }
+    	
+}
+
+/* */
+int search_auxiliary (Trie *root, char *word) {
+  printf("\nImplementar a busca\n");
+  Trie* t = root;
+  int i;
+  for(i=0;word[i]!= '\0';i++)
+  {
+    int index = word[i] -'a';
+    if(t->keys[index] == NULL)
+        return FALSE;
+    else
+      t = t->keys[index];
+  }
+  if(t->end)
+    return TRUE;
+  else
+    return FALSE; 
+}
+
+void search (Trie *root, char *word) {
+  if (search_auxiliary (root, word))
+    printf("Word %s found!\n", word);
+  else  
+    printf("Error: word %s not found!\n", word);
+}
+
+/* */
+void print (Trie *root, int level) {
+  if (root != NULL) {
+    int i;
+    if (root->data == '\0')
+      printf ("(null)");	    
+    for (i = 0; i < level; i++) {
+      printf ("| ");
+    }	    
+    printf ("%c (%d - %d)\n", root->data, root->end, root->nchild);
+    for (i = 0; i < size; i++) {
+      print (root->keys[i], level+1);      
+    }
+  }	  
+}
+
+void delete(Trie *root, char *word) {
+    if (!search_auxiliary(root, word)) {
+        printf("Erro: palavra não existe\n");
+        return;
+    }
+
+    int len = strlen(word);
+    if (len == 0) return;
+
+    // Armazena o caminho (nós pais e índices)
+    Trie **parent_nodes = (Trie **)malloc(len * sizeof(Trie *));
+    int *indices = (int *)malloc(len * sizeof(int));
+    int top = -1;
+
+    Trie *current = root;
+
+    // Percorre até o último caractere da palavra
+    for (int i = 0; i < len; i++) {
+        int index = word[i] - 'a';
+        parent_nodes[++top] = current;  // Armazena o nó pai
+        indices[top] = index;           // Armazena o índice usado
+        current = current->keys[index];
+    }
+
+    // Marca o fim da palavra como falso
+    current->end = FALSE;
+
+    // Verifica se o último nó pode ser deletado (sem filhos)
+    int can_delete = (current->nchild == 0);
+
+    // Backtracking para remover nós desnecessários
+    while (can_delete && top >= 0) {
+        Trie *node_to_delete = current;
+        current = parent_nodes[top];   // Volta para o nó pai
+        int index = indices[top];
+        top--;
+
+        // Remove a referência ao nó deletado
+        current->keys[index] = NULL;
+        current->nchild--;
+
+        // Libera a memória do nó e seus filhos
+        free_node(node_to_delete);
+
+        // Verifica se o nó atual pode ser deletado
+        can_delete = (current != root && current->nchild == 0 && !current->end);
+    }
+
+    free(parent_nodes);
+    free(indices);
+} 
